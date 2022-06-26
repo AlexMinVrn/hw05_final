@@ -15,11 +15,11 @@ class Group(models.Model):
 
 class Post(models.Model):
     text = models.TextField(
-        'Текст поста',
+        verbose_name='Текст поста',
         help_text='Введите текст поста'
     )
     pub_date = models.DateTimeField(
-        'Дата публикации',
+        verbose_name='Дата публикации',
         auto_now_add=True,
         db_index=True
     )
@@ -39,9 +39,10 @@ class Post(models.Model):
         help_text='Группа, к которой будет относиться пост'
     )
     image = models.ImageField(
-        'Картинка',
+        verbose_name='Картинка',
         upload_to='posts/',
-        blank=True
+        blank=True,
+        help_text='Загрузите картинку'
     )
 
     class Meta:
@@ -66,11 +67,11 @@ class Comment(models.Model):
         verbose_name='Автор'
     )
     text = models.TextField(
-        'Текст комментария',
+        verbose_name='Текст комментария',
         help_text='Введите текст комментария'
     )
     created = models.DateTimeField(
-        'Дата комментария',
+        verbose_name='Дата комментария',
         auto_now_add=True
     )
 

@@ -66,6 +66,12 @@ class PostFormTest(TestCase):
         self.assertEqual(Post.objects.count(), 1)
         self.assertRedirects(response, reverse(
             'posts:profile', kwargs={'username': self.user.username}))
+        response = self.client.post(
+            reverse('posts:post_create'),
+            data=form_data,
+            follow=True
+        )
+        self.assertRedirects(response, '/auth/login/?next=/create/')
 
     def test_post_edit(self):
         """Валидная форма изменяет запись в Post."""
@@ -90,6 +96,12 @@ class PostFormTest(TestCase):
         self.assertEqual(Post.objects.count(), 1)
         self.assertRedirects(response, reverse(
             'posts:post_detail', kwargs={'post_id': 1}))
+        response = self.client.post(
+            reverse('posts:post_edit', kwargs={'post_id': 1}),
+            data=form_data,
+            follow=True
+        )
+        self.assertRedirects(response, '/auth/login/?next=/posts/1/edit/')
 
 
 class CommentFormTest(TestCase):

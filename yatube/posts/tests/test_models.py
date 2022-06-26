@@ -1,5 +1,5 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.contrib.auth import get_user_model
 
 from ..models import Group, Post, Comment
 
@@ -13,7 +13,7 @@ class PostModelTest(TestCase):
         cls.user = User.objects.create_user(username='auth')
         cls.group = Group.objects.create(
             title='Тестовая группа',
-            slug='test-slug',
+            slug='Тестовый слаг',
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
@@ -23,6 +23,7 @@ class PostModelTest(TestCase):
         cls.comment = Comment.objects.create(
             text='Тестовый коммент для проверки',
             author=cls.user,
+            post=cls.post,
         )
 
     def test_models_have_correct_object_names(self):

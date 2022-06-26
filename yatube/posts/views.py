@@ -107,7 +107,7 @@ def add_comment(request, post_id):
     """Создание комментария к посту"""
     post = get_object_or_404(Post, pk=post_id)
     form = CommentForm(request.POST or None)
-    # comment = Comment.objects.filter(post=post)
+    comment = Comment.objects.filter(post=post)
     if form.is_valid():
         comment = form.save(commit=False)
         comment.author = request.user
