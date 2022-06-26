@@ -7,7 +7,7 @@ from .forms import PostForm, CommentForm
 from .models import Post, Group, User, Comment, Follow
 
 
-# @cache_page(20, key_prefix='index_page')
+@cache_page(20, key_prefix='index_page')
 def index(request):
     """Главная страница"""
     last_posts = Post.objects.select_related('group', 'author')

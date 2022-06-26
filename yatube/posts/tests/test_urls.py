@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.test import TestCase, Client
 
 from django.contrib.auth import get_user_model
@@ -22,6 +23,7 @@ class PostURLTest(TestCase):
         self.user = User.objects.create_user(username='auth')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        cache.clear()
         self.post = Post.objects.create(
             author=self.user,
             group=self.group,
@@ -98,5 +100,6 @@ class PostURLTest(TestCase):
         self.user_2 = User.objects.create_user(username='Вася')
         self.authorized_client_2 = Client()
         self.authorized_client_2.force_login(self.user_2)
+        cache.clear()
         response = self.authorized_client_2.get('/posts/1/edit/', follow=True)
         self.assertRedirects(response, '/posts/1/')

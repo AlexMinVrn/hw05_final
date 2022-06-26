@@ -2,6 +2,7 @@ import shutil
 import tempfile
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
@@ -36,6 +37,7 @@ class PostViewsTest(TestCase):
         self.user = User.objects.create_user(username='StasBasov')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        cache.clear()
         self.small_gif = (
             b'\x47\x49\x46\x38\x39\x61\x02\x00'
             b'\x01\x00\x80\x00\x00\x00\x00\x00'
@@ -162,6 +164,7 @@ class PaginatorViewsTest(TestCase):
         self.user = User.objects.create_user(username='StasBasov')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        cache.clear()
         post = [Post(
             text=f'Тестовый пост{i}',
             author=self.user,
@@ -178,9 +181,10 @@ class PaginatorViewsTest(TestCase):
         for reverse_name in pages_names:
             first_object = self.authorized_client.get(
                 reverse_name).context.get('page_obj')[0]
+            cache.clear()
             self.assertIsInstance(first_object, Post)
-            response_first_page = self.client.get(reverse_name)
-            response_second_page = self.client.get(
+            response_first_page = self.authorized_client.get(reverse_name)
+            response_second_page = self.authorized_client.get(
                 reverse_name + '?page=2')
             self.assertEqual(len(
                 response_first_page.context.get('page_obj')), 10)
