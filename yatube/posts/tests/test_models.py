@@ -29,13 +29,18 @@ class PostModelTest(TestCase):
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
         post = PostModelTest.post
-        self.assertEqual(post.text[:15], str(post))
-
         group = PostModelTest.group
-        self.assertEqual(group.title, str(group))
-
         comment = PostModelTest.comment
-        self.assertEqual(comment.text[:15], str(comment))
+        fields = (
+            (post, post.text[:15]),
+            (group, group.title),
+            (comment, comment.text[:15])
+        )
+        for field, expected_field in fields:
+            with self.subTest(field=field):
+                self.assertEqual(
+                    expected_field,
+                    str(field))
 
     def test_text_label(self):
         """verbose_name поля совпадает с ожидаемым."""

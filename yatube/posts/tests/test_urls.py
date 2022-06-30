@@ -3,6 +3,7 @@ from django.test import TestCase, Client
 
 from django.contrib.auth import get_user_model
 from http import HTTPStatus
+from django.urls import reverse
 
 from ..models import Group, Post
 
@@ -32,16 +33,16 @@ class PostURLTest(TestCase):
 
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
-        templates_url_names = {
-            '/': 'posts/index.html',
-            '/group/test-slug/': 'posts/group_list.html',
-            '/profile/auth/': 'posts/profile.html',
-            '/posts/1/': 'posts/post_detail.html',
-            '/posts/1/edit/': 'posts/create_post.html',
-            '/create/': 'posts/create_post.html',
-            '/follow/': 'posts/follow.html',
-        }
-        for address, template in templates_url_names.items():
+        templates_url_names = (
+            ('/', 'posts/index.html'),
+            ('/group/test-slug/', 'posts/group_list.html'),
+            ('/profile/auth/', 'posts/profile.html'),
+            ('/posts/1/', 'posts/post_detail.html'),
+            ('/posts/1/edit/', 'posts/create_post.html'),
+            ('/create/', 'posts/create_post.html'),
+            ('/follow/', 'posts/follow.html'),
+        )
+        for address, template in templates_url_names:
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
                 self.assertTemplateUsed(response, template)
@@ -88,10 +89,11 @@ class PostURLTest(TestCase):
             '/create/',
             '/follow/'
         )
+        url_2 = reverse('users:login')
         for address in authorized_url:
             with self.subTest(address=address):
                 response = self.client.get(address)
-                self.assertRedirects(response, f'/auth/login/?next={address}')
+                self.assertRedirects(response, f'{url_2}?next={address}')
 
     def test_edit_url_redirect_not_author_on_post_detail(self):
         """Страница по адресу /posts/1/edit/ перенаправит не автора

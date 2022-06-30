@@ -10,15 +10,15 @@
               {% include 'includes/errors.html' %}
             {% endif %}
               <form method="post" action="{% url 'users:signup' %}">
-              {% csrf_token %}
-              {% for field in form %}
-                {% include 'includes/for_field.html' %}
-              {% endfor %}
-              <div class="col-md-6 offset-md-4">
-                <button type="submit" class="btn btn-primary">
-                  Зарегистрироваться
-                </button>
-              </div>
+                {% csrf_token %}
+                {% for field in form %}
+                  {% include 'includes/for_field.html' %}
+                {% endfor %}
+                <div class="col-md-6 offset-md-4">
+                  <button type="submit" class="btn btn-primary">
+                    Зарегистрироваться
+                  </button>
+                </div>
             </form>
           </div> <!-- card body -->
         </div> <!-- card -->

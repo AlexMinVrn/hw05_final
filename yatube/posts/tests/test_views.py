@@ -1,9 +1,10 @@
 import shutil
 import tempfile
 
+import mock
 from django.conf import settings
 from django.core.cache import cache
-from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.files import File
 from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -38,24 +39,13 @@ class PostViewsTest(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         cache.clear()
-        self.small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
-        )
-        self.uploaded = SimpleUploadedFile(
-            name='small.gif',
-            content=self.small_gif,
-            content_type='image/gif'
-        )
+        self.image_mock = mock.MagicMock(spec=File)
+        self.image_mock.name = 'image_mock'
         self.post = Post.objects.create(
             author=self.user,
             group=self.group,
             text='Тестовый пост',
-            image=self.uploaded
+            image=self.image_mock
         )
         self.comment = Comment.objects.create(
             text='Тестовый комментарий',
@@ -65,24 +55,24 @@ class PostViewsTest(TestCase):
 
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
-        templates_pages_names = {
-            reverse('posts:index'): 'posts/index.html',
-            reverse(
+        templates_pages_names = (
+            (reverse('posts:index'), 'posts/index.html'),
+            (reverse(
                 'posts:group_list', kwargs={'slug': self.group.slug}
-            ): 'posts/group_list.html',
-            reverse(
+            ), 'posts/group_list.html'),
+            (reverse(
                 'posts:profile', kwargs={'username': self.user.username}
-            ): 'posts/profile.html',
-            reverse(
+            ), 'posts/profile.html'),
+            (reverse(
                 'posts:post_detail', kwargs={'post_id': 1}
-            ): 'posts/post_detail.html',
-            reverse(
+            ), 'posts/post_detail.html'),
+            (reverse(
                 'posts:post_edit', kwargs={'post_id': 1}
-            ): 'posts/create_post.html',
-            reverse('posts:post_create'): 'posts/create_post.html',
-            reverse('posts:follow_index'): 'posts/follow.html',
-        }
-        for reverse_name, template in templates_pages_names.items():
+            ), 'posts/create_post.html'),
+            (reverse('posts:post_create'), 'posts/create_post.html'),
+            (reverse('posts:follow_index'), 'posts/follow.html'),
+        )
+        for reverse_name, template in templates_pages_names:
             with self.subTest(reverse_name=reverse_name):
                 response = self.authorized_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
@@ -99,13 +89,12 @@ class PostViewsTest(TestCase):
         for reverse_name in views_names:
             with self.subTest(reverse_name=reverse_name):
                 response = self.authorized_client.get(reverse_name)
-                form_fields = {
-                    'text': forms.fields.CharField,
-                    'group': forms.fields.ChoiceField,
-                    'image': forms.fields.ImageField,
-                }
-
-            for value, expected in form_fields.items():
+                form_fields = (
+                    ('text', forms.fields.CharField),
+                    ('group', forms.fields.ChoiceField),
+                    ('image', forms.fields.ImageField),
+                )
+            for value, expected in form_fields:
                 with self.subTest(value=value):
                     form_field = response.context['form'].fields[value]
                     self.assertIsInstance(form_field, expected)
@@ -125,7 +114,7 @@ class PostViewsTest(TestCase):
         self.assertEqual(response.context.get('post').author, self.post.author)
         self.assertEqual(response.context.get('post').group, self.post.group)
         self.assertEqual(response.context.get('post').image, self.post.image)
-        self.assertEqual(response.context['comments'][0].text,
+        self.assertEqual(response.context.get('post').comments.all()[0].text,
                          self.comment.text)
 
     def test_pages_show_correct_context(self):
@@ -148,6 +137,19 @@ class PostViewsTest(TestCase):
                                  self.post.group)
                 self.assertEqual(response.context.get('post').image,
                                  self.post.image)
+
+    def test_index_cache(self):
+        """Проверяем работу Кэша в post_index"""
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.assertEqual(len(
+            response.context.get('page_obj')), 1)
+        Post.objects.filter(id=1).delete()
+        cache.clear()
+        self.assertEqual(len(
+            response.context.get('page_obj')), 1)
+        response_2 = self.authorized_client.get(reverse('posts:index'))
+        self.assertEqual(len(
+            response_2.context.get('page_obj')), 0)
 
 
 class PaginatorViewsTest(TestCase):

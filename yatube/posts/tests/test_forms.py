@@ -2,6 +2,7 @@ import shutil
 import tempfile
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.contrib.auth import get_user_model
@@ -31,6 +32,7 @@ class PostFormTest(TestCase):
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(username='post_author')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
@@ -115,6 +117,7 @@ class CommentFormTest(TestCase):
         )
 
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(username='NoName')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
@@ -143,10 +146,11 @@ class CommentFormTest(TestCase):
         form_data = {
             'text': 'Тестовый комментарий',
         }
-        response = self.client.post(
-            reverse('posts:add_comment', kwargs={'post_id': 1}),
-            data=form_data,
-            follow=True
-        )
+        url_1 = reverse('posts:add_comment', kwargs={'post_id': 1})
+        response = self.client.post(url_1,
+                                    data=form_data,
+                                    follow=True
+                                    )
+        url_2 = reverse('users:login')
         self.assertEqual(Comment.objects.count(), 0)
-        self.assertRedirects(response, '/auth/login/?next=/posts/1/comment/')
+        self.assertRedirects(response, f'{url_2}?next={url_1}')

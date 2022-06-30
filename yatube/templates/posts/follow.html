@@ -3,7 +3,7 @@
   Посты избранных авторов
 {% endblock %}
 {% block content %}
-{% include 'includes/switcher.html' %}
+  {% include 'includes/switcher.html' %}
   <h1>Посты избранных авторов</h1>
     {% for post in page_obj %}
       {% include 'includes/article.html' %}

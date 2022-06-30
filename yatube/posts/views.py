@@ -4,7 +4,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.cache import cache_page
 
 from .forms import PostForm, CommentForm
-from .models import Post, Group, User, Comment, Follow
+from .models import Post, Group, User, Follow
 
 
 @cache_page(20, key_prefix='index_page')
@@ -33,13 +33,11 @@ def profile(request, username):
     posts = author.posts.select_related('group', 'author').all()
     page_obj = paginate_page(request, posts)
     following = False
-    if request.user.is_authenticated:
-        if Follow.objects.filter(
-                user=request.user,
-                author=author).exists():
-            following = True
+    if request.user.is_authenticated and Follow.objects.filter(
+            user=request.user,
+            author=author).exists():
+        following = True
     context = {
-        'posts': posts,
         'page_obj': page_obj,
         'author': author,
         'following': following
@@ -50,11 +48,9 @@ def profile(request, username):
 def post_detail(request, post_id):
     """Страница выбранного поста"""
     post = get_object_or_404(Post, pk=post_id)
-    comments = post.comments.select_related('post').filter(post_id=post_id)
     form = CommentForm(request.POST)
     context = {
         'post': post,
-        'comments': comments,
         'form': form,
     }
     return render(request, 'posts/post_detail.html', context)
@@ -65,14 +61,14 @@ def post_create(request):
     """Создание нового поста, после успешного заполнения -
     переход на страницу профиля"""
     form = PostForm(request.POST or None)
-    if request.method == 'POST':
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
-            return redirect('posts:profile', request.user.username)
+    if not request.method == 'POST':
         return render(request, 'posts/create_post.html', {'form': form})
-    return render(request, 'posts/create_post.html', {'form': form})
+    if not form.is_valid():
+        return render(request, 'posts/create_post.html', {'form': form})
+    post = form.save(commit=False)
+    post.author = request.user
+    post.save()
+    return redirect('posts:profile', request.user.username)
 
 
 @login_required
@@ -107,7 +103,6 @@ def add_comment(request, post_id):
     """Создание комментария к посту"""
     post = get_object_or_404(Post, pk=post_id)
     form = CommentForm(request.POST or None)
-    comment = Comment.objects.filter(post=post)
     if form.is_valid():
         comment = form.save(commit=False)
         comment.author = request.user
@@ -130,9 +125,9 @@ def follow_index(request):
 def profile_follow(request, username):
     """Подписаться на автора"""
     author = get_object_or_404(User, username=username)
-    if request.user != author and (not Follow.objects.filter(
+    if request.user != author and not Follow.objects.filter(
             user=request.user,
-            author=author).exists()):
+            author=author).exists():
         follower = request.user
         followed = User.objects.get(username=username)
         Follow.objects.create(user=follower, author=followed)
@@ -143,7 +138,8 @@ def profile_follow(request, username):
 def profile_unfollow(request, username):
     """Дизлайк, отписка"""
     author = get_object_or_404(User, username=username)
-    Follow.objects.filter(
-        user=request.user,
-        author=author).delete()
+    if Follow.objects.filter(user=request.user, author=author).exists():
+        Follow.objects.filter(
+            user=request.user,
+            author=author).delete()
     return redirect('posts:profile', username=username)

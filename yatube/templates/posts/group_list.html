@@ -6,8 +6,8 @@
   <h1>{{ group.title }}</h1>
   <p>{{ group.description }}</p>
     {% for post in page_obj %}
-    {% include 'includes/article.html' %}
-    {% if not forloop.last %}<hr>{% endif %}
+      {% include 'includes/article.html' %}
+      {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}
 {% include 'includes/paginator.html' %}
 {% endblock %}
