@@ -32,11 +32,7 @@ def profile(request, username):
     author = get_object_or_404(User, username=username)
     posts = author.posts.select_related('group', 'author').all()
     page_obj = paginate_page(request, posts)
-    following = False
-    if request.user.is_authenticated and Follow.objects.filter(
-            user=request.user,
-            author=author).exists():
-        following = True
+    following = request.user.is_authenticated and author.following.exists()
     context = {
         'page_obj': page_obj,
         'author': author,
@@ -86,16 +82,16 @@ def post_edit(request, post_id):
         files=request.FILES or None,
         instance=post
     )
-    if request.method == "POST":
-        if form.is_valid():
-            form.save()
-        return redirect('posts:post_detail', post_id)
-    context = {
-        'post': post,
-        'form': form,
-        'is_edit': True,
-    }
-    return render(request, 'posts/create_post.html', context)
+    if request.method != 'POST':
+        context = {
+            'post': post,
+            'form': form,
+            'is_edit': True,
+        }
+        return render(request, 'posts/create_post.html', context)
+    if form.is_valid():
+        form.save()
+    return redirect('posts:post_detail', post_id)
 
 
 @login_required
@@ -125,12 +121,8 @@ def follow_index(request):
 def profile_follow(request, username):
     """Подписаться на автора"""
     author = get_object_or_404(User, username=username)
-    if request.user != author and not Follow.objects.filter(
-            user=request.user,
-            author=author).exists():
-        follower = request.user
-        followed = User.objects.get(username=username)
-        Follow.objects.create(user=follower, author=followed)
+    if request.user != author and not author.following.exists():
+        Follow.objects.create(user=request.user, author=author)
     return redirect('posts:profile', username=username)
 
 
@@ -138,8 +130,7 @@ def profile_follow(request, username):
 def profile_unfollow(request, username):
     """Дизлайк, отписка"""
     author = get_object_or_404(User, username=username)
-    if Follow.objects.filter(user=request.user, author=author).exists():
-        Follow.objects.filter(
-            user=request.user,
-            author=author).delete()
+    follow = Follow.objects.filter(user=request.user, author=author)
+    if follow.exists():
+        follow.delete()
     return redirect('posts:profile', username=username)

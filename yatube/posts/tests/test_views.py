@@ -141,15 +141,23 @@ class PostViewsTest(TestCase):
     def test_index_cache(self):
         """Проверяем работу Кэша в post_index"""
         response = self.authorized_client.get(reverse('posts:index'))
-        self.assertEqual(len(
-            response.context.get('page_obj')), 1)
-        Post.objects.filter(id=1).delete()
-        cache.clear()
-        self.assertEqual(len(
-            response.context.get('page_obj')), 1)
+        self.assertEqual(len(response.context.get('page_obj')), 1)
+        Post.objects.create(
+            author=self.user,
+            group=self.group,
+            text='Тестовый пост 2',
+        )
         response_2 = self.authorized_client.get(reverse('posts:index'))
-        self.assertEqual(len(
-            response_2.context.get('page_obj')), 0)
+        self.assertEqual(response.content, response_2.content)
+
+        cache.clear()
+        response_3 = self.authorized_client.get(reverse('posts:index'))
+        self.assertNotEqual(response.content, response_3.content)
+        self.assertEqual(len(response_3.context.get('page_obj')), 2)
+
+        Post.objects.first().delete()
+        response_4 = self.authorized_client.get(reverse('posts:index'))
+        self.assertEqual(response_3.content, response_4.content)
 
 
 class PaginatorViewsTest(TestCase):
