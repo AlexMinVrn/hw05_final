@@ -19,6 +19,7 @@ python manage.py migrate
 ```
 python manage.py runserver
 ```
+![Screenshot](/img/yatube.jpg)  
 ### Автор
 - [Александр Минаев]
 
